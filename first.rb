@@ -1,8 +1,8 @@
 #контейнер и укажем путь для файлов !!!!!!ковычки косые!!!!!!!
-docker run --rm -it -v `pwd`:/home/denis/projectruby/first ruby:2.7-alpine
+#docker run --rm -it -v `pwd`:/Ruby-First ruby:2.7-alpine
+#docker run --rm -it -v `pwd`:/Ruby-First ruby:2.7-alpine sh
 
-
-fh = open '/home/denis/projectruby/first/prices.csv'
+fh = open 'prices.csv'
 $array_prices=Array.new
 while (line = fh.gets) 
     #пройдемся построчно и получим массив цены
@@ -19,7 +19,7 @@ class Inform_Hdd
         #@hdd_type, @hdd_capacity = hdd_type, hdd_capacity
         @array=Array.new
         arr=Array.new
-        arr[arr.length]=hdd_type
+        arr[arr.length]=hdd_type.chomp
         arr[arr.length]=hdd_capacity.to_i
         @array[@array.length]=arr
         @hdd_capacity_total=hdd_capacity.to_i
@@ -27,7 +27,7 @@ class Inform_Hdd
     #добавить жесткий диск
     def Add(hdd_type,hdd_capacity)
         arr=Array.new
-        arr[arr.length]=hdd_type
+        arr[arr.length]=hdd_type.chomp
         arr[arr.length]=hdd_capacity.to_i
         @array[@array.length]=arr
         @hdd_capacity_total+=hdd_capacity.to_i
@@ -40,11 +40,38 @@ class Inform_Hdd
         end
         price.to_i
     end
-
-    def GetHddCapacityTotal
-        @hdd_capacity_total
+    #получить обьем по типу
+    def GetCapacityType(type="")
+        capacity=0 
+        if type !=""
+            @array.each do |element| 
+                if element[0] == type
+                    capacity+=element[1]  
+                end
+            end
+        else
+            @array.each do |element| 
+                capacity+=element[1]
+            end
+        end
+        capacity.to_i
     end
-
+    #получить кол-во по типу
+    def GetCountType(type="")
+        count=0
+        if type !=""
+            @array.first(@array.length-1).each do |element| 
+                if element[0] == type
+                    count+=1  
+                end
+            end
+        else
+            @array.first(@array.length-1).each do |element| 
+                count+=1
+            end
+        end
+        count.to_i
+    end
 end
 #класс виртуальной машины
 class Virtual_Machine 
@@ -59,16 +86,35 @@ class Virtual_Machine
         @inform_hdd.Add(hdd_type,hdd_capacity)
     end
     #получить цену жестких дисков с учетом озу и процессоров
+
     def GetPrice
-        price=@cpu*$hash_prices["cpu"]+$hash_prices["ram"]+@inform_hdd.GetPrice
-        price.to_i
+        @cpu*$hash_prices['cpu']+@ram*$hash_prices['ram']+@inform_hdd.GetPrice
     end
-    def GetHddCapacityTotal
-        @inform_hdd.GetHddCapacityTotal
+
+    def GetCapacityType(type="")
+        #puts "#{type}"
+        case type 
+        when "cpu"
+          @cpu*$hash_prices["cpu"].to_i
+        when "ram"
+            @ram*$hash_prices["ram"].to_i
+        when "ssd","sata","sas"
+            @inform_hdd.GetCapacityType(type).to_i
+        when ""
+            @cpu*$hash_prices["cpu"].to_i+@ram*$hash_prices["ram"].to_i+@inform_hdd.GetCapacityType(type).to_i
+        else
+            puts "Error Type!"
+        end
+        
     end
-    #дебаг
-    def GetPriceInf
-        @inform_hdd.GetPrice
+
+    def GetCountType(type="")
+        case type 
+        when "ssd","sata","sas",""
+            @inform_hdd.GetCountType(type)
+        else
+            puts "Error Type!"
+        end
     end
     
 end
@@ -77,8 +123,7 @@ class VIRTUAL_MACHINES
     
     def initialize(id, cpu, ram, hdd_type, hdd_capacity)
         @virtual_machine=Array.new
-        @virtual_machine[id]=Virtual_Machine.new(id,cpu,ram,hdd_type,hdd_capacity)
-        
+        @virtual_machine[id]=Virtual_Machine.new(id,cpu,ram,hdd_type,hdd_capacity)  
     end
     #добавить виртуальную машину
     def AddVMachine(id, cpu, ram, hdd_type, hdd_capacity)
@@ -92,21 +137,21 @@ class VIRTUAL_MACHINES
     def GetPrice(id)
         price = @virtual_machine[id].GetPrice
         price.to_i
-    end 
+    end
     #важно чтобы ид был монотонный
     def GetLength
         @virtual_machine.length
     end
-    def GetHddCapacityTotal(id)
-        @virtual_machine[id].GetHddCapacityTotal.to_i
+    def GetCapacityType(id,type="")
+        @virtual_machine[id].GetCapacityType(type).to_i
     end
-    #для дебага
-    def GetPriceInf(id)
-        @virtual_machine[id].GetPriceInf
+
+    def GetCountType(id,type="")
+        @virtual_machine[id].GetCountType(type).to_i
     end
 end 
 
-fh = open '/home/denis/projectruby/first/vms.csv'
+fh = open 'vms.csv'
 arrayvms=Array.new
 line = fh.gets
 arrayvms=line.chomp.split(',')
@@ -118,7 +163,7 @@ while (line = fh.gets)
     v_machines.AddVMachine(arrayvms[0].to_i,arrayvms[1].to_i,arrayvms[2].to_i,arrayvms[3].to_s,arrayvms[4].to_i)
 end
 
-fh = open '/home/denis/projectruby/first/volumes.csv'
+fh = open 'volumes.csv'
 arrayvms=Array.new
 #добавим дополнительные жесткие диски из бд волумс
 while (line = fh.gets) 
@@ -126,31 +171,41 @@ while (line = fh.gets)
     v_machines.AddInf(arrayvms[0].to_i,arrayvms[1].to_s,arrayvms[2].to_i)
 end
 
-virtual_prices = Array.new
+idsvms = Array.new
+idsvms = (0..v_machines.GetLength-1).to_a
 
-v_machines.GetLength.times do |i|
-    arr=Array.new
-    arr[1]=i
-    arr[0]=v_machines.GetPrice(i)
-    virtual_prices[i]=arr
-end
-#Sorted
-sort_virtual_prices=Hash[*virtual_prices.flatten].sort
 
 puts "Отчет который выводит n самых дорогих ВМ\n Введите 'N'"
 n=gets.to_i
-
-sort_virtual_prices.last(n).each do |element| 
-    puts "id:#{element[1]}; Price:#{element[0]}"
+idsvms = idsvms.sort{|a,b| v_machines.GetPrice(a)<=>v_machines.GetPrice(b)}
+idsvms.last(n).each do |element|
+    puts "id:#{element} Price:#{v_machines.GetPrice(element)}"
 end
 
 puts "Отчет который выводит n самых дешевых ВМ\n Введите 'N'"
 n=gets.to_i
 
-sort_virtual_prices.first(n).each do |element| 
-    puts "id:#{element[1]}; Price:#{element[0]}"
+idsvms.first(n).each do |element| 
+    puts "id:#{element}; Price:#{v_machines.GetPrice(element)}"
 end
-puts "Отчет который выводит n-ый ВМ по параметру hdd_type\n Введите 'N'"
-n=gets.to_i
-puts "Максимальный обьем HDD в сумме #{v_machines.GetHddCapacityTotal(n)}"
+puts "Отчет который выводит n самых объемных ВМ по параметру type\n Введите 'N type' через пробел"
+type=gets.to_s.chomp.split(" ").map(&:to_s)
+if type[1]==nil
+    type[1]=""
+end
+idsvms = idsvms.sort{|a,b| (v_machines.GetCapacityType(a,type[1])<=>v_machines.GetCapacityType(b,type[1]))}
 
+idsvms.last(type[0].to_i).each do |element| 
+    puts "id:#{element}; Capacity:#{v_machines.GetCapacityType(element,type[1])}"
+end 
+
+puts "Отчет который выводит n ВМ у которых подключено больше всего дополнительных дисков (по количеству) (с учетом типа диска если параметр hdd_type указан)\n Введите 'N type' через пробел"
+type=gets.to_s.chomp.split(" ").map(&:to_s)
+if type[1]==nil
+    type[1]=""
+end
+idsvms = idsvms.sort{|a,b| (v_machines.GetCountType(a,type[1])-1<=>v_machines.GetCountType(b,type[1])-1)}
+
+idsvms.last(type[0].to_i).each do |element| 
+    puts "id:#{element}; Capacity:#{v_machines.GetCountType(element,type[1])}"
+end 
