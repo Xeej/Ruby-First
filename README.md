@@ -1,4 +1,3 @@
-# Домашнее задание к занятию от 19 февраля по Ruby
 
 [Ruby за двадцать минут](https://www.ruby-lang.org/ru/documentation/quickstart/)
 
@@ -45,3 +44,7 @@
 ```
 docker run --rm -it -v `pwd`:/app ruby:2.7-alpine
 ```
+###########################################################
+Для запуска программы: 
+sudo snap install ruby --classic
+pwd-> ruby first.rb
