@@ -45,6 +45,10 @@
 docker run --rm -it -v `pwd`:/app ruby:2.7-alpine
 ```
 ###########################################################
+
 Для запуска программы: 
 sudo snap install ruby --classic
 pwd-> ruby first.rb
+
+
+![alt text](1.png "Описание будет тут")​
